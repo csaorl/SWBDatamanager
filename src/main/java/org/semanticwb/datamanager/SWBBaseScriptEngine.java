@@ -203,11 +203,15 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 {
                     String key=it.next();
                     ScriptObject data=ext.get(key);
-                    try
+                    String scriptEng=data.getString("scriptEngine");                            
+                    if(scriptEng==null || source.equals(scriptEng))
                     {
-                        DataExtractorBase dext=new DataExtractorBaseImp(key,data,this);
-                        dataExtractors.put(key,dext);
-                    }catch(Exception e){e.printStackTrace();} 
+                        try
+                        {
+                            DataExtractorBase dext=new DataExtractorBaseImp(key,data,this);
+                            dataExtractors.put(key,dext);
+                        }catch(Exception e){e.printStackTrace();} 
+                    }                    
                 }
             }     
             
