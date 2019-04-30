@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.semanticwb.datamanager.datastore.SWBDataStore;
+import org.semanticwb.datamanager.monitor.SWBMonitorMgr;
 import org.semanticwb.datamanager.script.ScriptObject;
 
 /**
@@ -156,13 +157,17 @@ public class SWBDataSource
      */
     public DataObjectIterator find(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
+        long time=System.currentTimeMillis();
         if(canDoAction(ACTION_FETCH))
         {
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json);
             DataObjectIterator res=db.find(req,this);
+            SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
+            SWBMonitorMgr.cancelMonitor();
             return new DataObjectIterator();
         }
     }  
@@ -297,6 +302,7 @@ public class SWBDataSource
      */
     public DataObject fetch(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
         if(canDoAction(ACTION_FETCH))
         {
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json);
@@ -304,9 +310,11 @@ public class SWBDataSource
             DataObject res=db.fetch(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_RESPONSE, res);
             engine.invokeDataServices(name, SWBDataSource.ACTION_FETCH, req, res);
+            SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
+            SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }
     }
@@ -330,15 +338,18 @@ public class SWBDataSource
      */
     public DataObject aggregate(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_AGGREGATE);
         if(canDoAction(ACTION_AGGREGATE))
         {        
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_REQUEST, json);
             DataObject res=db.aggregate(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_RESPONSE, res);
             engine.invokeDataServices(name, SWBDataSource.ACTION_AGGREGATE, req, res);
+            SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
+            SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }            
     }
@@ -614,6 +625,7 @@ public class SWBDataSource
     
     public DataObject update(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_UPDATE);
         if(canDoAction(ACTION_UPDATE))
         {         
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_UPDATE, SWBDataProcessor.METHOD_REQUEST, json);
@@ -629,11 +641,12 @@ public class SWBDataSource
                     String id=data.getString("_id");
                     cache.remove(id);
                 }
-            }
-
+            }            
+            SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
+            SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         } 
     }   
@@ -663,15 +676,18 @@ public class SWBDataSource
     
     public DataObject add(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_ADD);        
         if(canDoAction(ACTION_ADD))
         {                  
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_REQUEST, json);
             DataObject res=db.add(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_RESPONSE, res);
             engine.invokeDataServices(name, SWBDataSource.ACTION_ADD, req, res);
+            SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
+            SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }             
     }  
@@ -816,6 +832,8 @@ public class SWBDataSource
      */
     public DataObject remove(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_REMOVE);
+        long time=System.currentTimeMillis();
         if(canDoAction(ACTION_REMOVE))
         {          
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_REQUEST, json);
@@ -823,10 +841,12 @@ public class SWBDataSource
             DataObject res=db.remove(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_RESPONSE, res);
             engine.invokeDataServices(name, SWBDataSource.ACTION_REMOVE, req, res);
-            cache.clear();        
+            cache.clear();    
+            SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
+            SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }         
     }   
@@ -856,6 +876,7 @@ public class SWBDataSource
     
     public DataObject validate(DataObject json) throws IOException
     {
+        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_VALIDATE);
 //        String modelid=dataSource.getModelId();
 //        String scls=dataSource.getClassName();
         DataObject ret=new DataObject();
@@ -940,6 +961,7 @@ public class SWBDataSource
         {
             resp.put("status", 0);
         }
+        SWBMonitorMgr.endMonitor();
         return ret;                
     } 
     

@@ -25,6 +25,7 @@ import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 import org.semanticwb.datamanager.datastore.SWBDataStore;
 import org.semanticwb.datamanager.filestore.SWBFileSource;
+import org.semanticwb.datamanager.monitor.SWBMonitorMgr;
 import org.semanticwb.datamanager.script.ScriptObject;
 
 /**
@@ -497,6 +498,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      */
     protected void invokeDataServices(SWBScriptEngine userengine, String dataSource, String action, DataObject request, DataObject response)
     {
+        SWBMonitorMgr.startMonitor("/dv/"+dataSource+"/"+action);
+        long time=System.currentTimeMillis();
         if(disabledDataTransforms)return;
         
         List<SWBDataService> list=findDataServices(dataSource, action);
@@ -518,7 +521,11 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                     }
                 }
             }            
-        }       
+            SWBMonitorMgr.endMonitor();
+        }else
+        {
+            SWBMonitorMgr.cancelMonitor();
+        }
     }
     
 //    @Override
@@ -565,6 +572,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      */
     protected DataObject invokeDataProcessors(SWBScriptEngine userengine, String dataSource, String action, String method, DataObject obj)
     {
+        SWBMonitorMgr.startMonitor("/dp/"+dataSource+"/"+action+"/"+method);
         if(disabledDataTransforms)return obj;
         
         List<SWBDataProcessor> list=findDataProcessors(dataSource, action);
@@ -594,7 +602,11 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                     }
                 }
             }            
-        }   
+            SWBMonitorMgr.endMonitor();
+        }else
+        {
+            SWBMonitorMgr.cancelMonitor();
+        }
         return obj;
     }
     
