@@ -722,10 +722,10 @@ public class DataUtils {
                 }
                 else
                 {
-                    ret = (second + " second ago");
+                    ret = (second + " seconds ago");
                 }
             }
-            else
+            else if("es".equals(lang))
             {
                 if (year > 0)
                 {
@@ -750,6 +750,32 @@ public class DataUtils {
                 else
                 {
                     ret = (second + " segundo(s) atrás");
+                }
+            }else
+            {
+                if (year > 0)
+                {
+                    ret = (year + " years");
+                }
+                else if (month > 0)
+                {
+                    ret = (month + " month");
+                }
+                else if (day > 0)
+                {
+                    ret = (day + " days");
+                }
+                else if (hour > 0)
+                {
+                    ret = (hour + " hours");
+                }
+                else if (minute > 0)
+                {
+                    ret = (minute + " minutes");
+                }
+                else
+                {
+                    ret = (second + " seconds");
                 }
             }
             return ret;

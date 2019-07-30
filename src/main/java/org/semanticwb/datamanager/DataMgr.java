@@ -32,11 +32,20 @@ public class DataMgr
     
     private static String applicationPath=null;
     
+    protected static String contextPath="";
+    
     private static ServletContext context=null;
     
     private String baseDatasource=null;
     
     private static java.util.HashMap<String, Object> appContext=null;
+    
+    
+    private DataMgr(String applicationPath, String contextPath)
+    {
+        this(applicationPath);
+        DataMgr.contextPath=contextPath;
+    }
     
     
     private DataMgr(String applicationPath)
@@ -49,7 +58,7 @@ public class DataMgr
         appContext=new java.util.HashMap();
         
         DataMgr.applicationPath=applicationPath;
-        
+                
         //DataSource.init(applicationPath+"WEB-INF/datasources/");   
         RoutesMgr.startup();
     }
@@ -112,7 +121,7 @@ public class DataMgr
     {
         return instance;
     }    
-    
+        
     /**
      *
      * @param applicationPath
@@ -141,7 +150,9 @@ public class DataMgr
     public static DataMgr createInstance(ServletContext ctx)
     {
         context=ctx;
-        return createInstance(ctx.getRealPath("/"));
+        DataMgr inst=createInstance(ctx.getRealPath("/"));
+        DataMgr.contextPath=ctx.getContextPath();
+        return inst;
     }
 
     /**
@@ -151,6 +162,12 @@ public class DataMgr
     public static String getApplicationPath() {
         return applicationPath;
     }
+    
+    public static String getContextPath()
+    {
+        return contextPath;
+    }
+    
 /*    
     public static String readApplicationFile(String source)throws IOException
     {

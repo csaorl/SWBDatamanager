@@ -63,7 +63,7 @@ public interface SWBScriptEngine
      * @param action
      * @return Lista de SWBDataProcessor o null si no hay SWBDataService relacionados
      */
-    public List<SWBDataProcessor> findDataProcessors(String dataSource, String action);
+    public Set<SWBDataProcessor> findDataProcessors(String dataSource, String action);
 
     /**
      * Busca los objetos SWBDataService relacionados a un especifico DataSource y una accion
@@ -71,7 +71,7 @@ public interface SWBScriptEngine
      * @param action
      * @return Lista de SWBDataService o null si no hay SWBDataService relacionados
      */
-    public List<SWBDataService> findDataServices(String dataSource, String action);
+    public Set<SWBDataService> findDataServices(String dataSource, String action);
 
     /**
      *
@@ -121,14 +121,15 @@ public interface SWBScriptEngine
     public ScriptObject getScriptObject();
 
     /**
-     *
+     * 
      * @param dataSource
      * @param action
      * @param method
      * @param obj
-     * @return
+     * @param trxParams - Transaction Params
+     * @return 
      */
-    public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj);
+    public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams);
 
     /**
      *
@@ -137,7 +138,7 @@ public interface SWBScriptEngine
      * @param request
      * @param response
      */
-    public void invokeDataServices(String dataSource, String action, DataObject request, DataObject response);
+    public void invokeDataServices(String dataSource, String action, DataObject request, DataObject response, DataObject trxParams);
 
     /**
      *
@@ -287,5 +288,36 @@ public interface SWBScriptEngine
      * @return DataObject
      */
     public DataObject getConfigData();
+    
+    /**
+     * Gets global data eng.data
+     * @return 
+     */
+    public DataObject getData();
+    
+    /**
+     * Gets the source path of the script
+     * @return String
+     */
+    public String getSource();
+    
+    /**
+     * Compile the code
+     * @param code String
+     * @return String with the error or null if ok
+     */
+    public String compile(String code);
+    
+    /**
+     * Get processMgr Instance
+     * @return 
+     */
+    public ProcessMgr getProcessMgr();
+    
+    /**
+     * Get Server ContntextPath
+     * @return 
+     */
+    public String getContextPath();
 
 }

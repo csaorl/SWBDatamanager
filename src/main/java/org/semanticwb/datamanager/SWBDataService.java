@@ -11,7 +11,7 @@ import org.semanticwb.datamanager.script.ScriptObject;
  *
  * @author javier.solis
  */
-public class SWBDataService 
+public class SWBDataService implements Comparable<SWBDataService>
 {
 
     /**
@@ -49,5 +49,10 @@ public class SWBDataService
     {
         return script;
     }      
+
+    @Override
+    public int compareTo(SWBDataService o) {
+        return script.getInt("order")>o.getDataServiceScript().getInt("order")?1:-1;
+    }
    
 }

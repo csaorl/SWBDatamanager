@@ -78,6 +78,8 @@ public class SWBDataSource
     private String modelid=null;
     
     private HashMap<String,DataObject> cache=new HashMap();    
+    private HashMap<String,ArrayList<ScriptObject>> scriptFields=new HashMap();    
+    
     private HashMap<String,String> removeDependenceFields=null;
         
     /**
@@ -161,7 +163,8 @@ public class SWBDataSource
         long time=System.currentTimeMillis();
         if(canDoAction(ACTION_FETCH))
         {
-            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json);
+            DataObject trxParams=new DataObject();
+            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             DataObjectIterator res=db.find(req,this);
             SWBMonitorMgr.endMonitor();
             return res;
@@ -305,11 +308,12 @@ public class SWBDataSource
         SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
         if(canDoAction(ACTION_FETCH))
         {
-            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json);
+            DataObject trxParams=new DataObject();
+            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             if(json.getInt("endRow",0)==0 && json.getInt("startRow",0)==0)json.put("endRow", 1000);
             DataObject res=db.fetch(req,this);
-            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_RESPONSE, res);
-            engine.invokeDataServices(name, SWBDataSource.ACTION_FETCH, req, res);
+            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
+            engine.invokeDataServices(name, SWBDataSource.ACTION_FETCH, req, res, trxParams);
             SWBMonitorMgr.endMonitor();
             return res;
         }else
@@ -341,10 +345,11 @@ public class SWBDataSource
         SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_AGGREGATE);
         if(canDoAction(ACTION_AGGREGATE))
         {        
-            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_REQUEST, json);
+            DataObject trxParams=new DataObject();
+            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             DataObject res=db.aggregate(req,this);
-            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_RESPONSE, res);
-            engine.invokeDataServices(name, SWBDataSource.ACTION_AGGREGATE, req, res);
+            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
+            engine.invokeDataServices(name, SWBDataSource.ACTION_AGGREGATE, req, res, trxParams);
             SWBMonitorMgr.endMonitor();
             return res;
         }else
@@ -628,10 +633,11 @@ public class SWBDataSource
         SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_UPDATE);
         if(canDoAction(ACTION_UPDATE))
         {         
-            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_UPDATE, SWBDataProcessor.METHOD_REQUEST, json);
+            DataObject trxParams=new DataObject();
+            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_UPDATE, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             DataObject res=db.update(req,this);
-            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_UPDATE, SWBDataProcessor.METHOD_RESPONSE, res);
-            engine.invokeDataServices(name, SWBDataSource.ACTION_UPDATE, req, res);
+            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_UPDATE, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
+            engine.invokeDataServices(name, SWBDataSource.ACTION_UPDATE, req, res, trxParams);
 
             if(req!=null)
             {
@@ -679,10 +685,11 @@ public class SWBDataSource
         SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_ADD);        
         if(canDoAction(ACTION_ADD))
         {                  
-            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_REQUEST, json);
+            DataObject trxParams=new DataObject();
+            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             DataObject res=db.add(req,this);
-            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_RESPONSE, res);
-            engine.invokeDataServices(name, SWBDataSource.ACTION_ADD, req, res);
+            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
+            engine.invokeDataServices(name, SWBDataSource.ACTION_ADD, req, res, trxParams);
             SWBMonitorMgr.endMonitor();
             return res;
         }else
@@ -836,11 +843,12 @@ public class SWBDataSource
         long time=System.currentTimeMillis();
         if(canDoAction(ACTION_REMOVE))
         {          
-            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_REQUEST, json);
+            DataObject trxParams=new DataObject();
+            DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             checkRemoveDependence(json);
             DataObject res=db.remove(req,this);
-            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_RESPONSE, res);
-            engine.invokeDataServices(name, SWBDataSource.ACTION_REMOVE, req, res);
+            res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
+            engine.invokeDataServices(name, SWBDataSource.ACTION_REMOVE, req, res, trxParams);
             cache.clear();    
             SWBMonitorMgr.endMonitor();
             return res;
@@ -1013,12 +1021,22 @@ public class SWBDataSource
      */
     public ArrayList<ScriptObject> findScriptFields(String prop, String value)
     {
-        ScriptObject fields=script.get("fields");
-        ArrayList<ScriptObject> ret=DataUtils.getArrayNodes(script.get("fields"), prop, value);
-        ArrayList<ScriptObject> ret2=DataUtils.getArrayNodes(script.get("links"), prop, value);
-        ret.addAll(ret2);
+        ArrayList<ScriptObject> ret=scriptFields.get(prop+"-"+value);
+        if(ret==null)
+        {
+            synchronized(this)
+            {
+                ret=scriptFields.get(prop+"-"+value);
+                if(ret==null)
+                {
+                    ret=DataUtils.getArrayNodes(script.get("fields"), prop, value);
+                    ret.addAll(DataUtils.getArrayNodes(script.get("links"), prop, value));   
+                    scriptFields.put(prop+"-"+value, ret);
+                }
+            }
+        }
         return ret;
-    } 
+    }
     
     /**
      *

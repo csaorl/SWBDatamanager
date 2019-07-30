@@ -4,13 +4,14 @@
  */
 package org.semanticwb.datamanager;
 
+import java.util.Iterator;
 import org.semanticwb.datamanager.script.ScriptObject;
 
 /**
  *
  * @author javier.solis
  */
-public class SWBDataProcessor 
+public class SWBDataProcessor implements Comparable<SWBDataProcessor>
 {
 
     /**
@@ -54,4 +55,10 @@ public class SWBDataProcessor
     {
         return script;
     }      
+
+    @Override
+    public int compareTo(SWBDataProcessor o) 
+    {
+        return script.getInt("order")>o.getDataProcessorScript().getInt("order")?1:-1;
+    }
 }

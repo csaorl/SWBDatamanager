@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +28,7 @@ import org.semanticwb.datamanager.datastore.SWBDataStore;
 import org.semanticwb.datamanager.filestore.SWBFileSource;
 import org.semanticwb.datamanager.monitor.SWBMonitorMgr;
 import org.semanticwb.datamanager.script.ScriptObject;
+import javax.script.Compilable;
 
 /**
  *
@@ -46,8 +48,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     
     private HashMap<String,DataExtractorBase> dataExtractors=null;
         
-    private HashMap<String,List<SWBDataService>> dataServices=null;
-    private HashMap<String,List<SWBDataProcessor>> dataProcessors=null;
+    private HashMap<String,Set<SWBDataService>> dataServices=null;
+    private HashMap<String,Set<SWBDataProcessor>> dataProcessors=null;
+    
+    private DataObject data=new DataObject();
     
     private ScriptEngine sengine=null;
     private ScriptObject sobject=null;
@@ -66,6 +70,8 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     private boolean disabledDataTransforms=false;
     
     private SWBScriptUtils utils;
+    
+    private ProcessMgr processMgr;
 
     private SWBBaseScriptEngine(String source)
     {        
@@ -122,7 +128,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             }
             
             ScriptEngine engine=DataMgr.getNativeScriptEngine();     
-            //engine.put("_swbf_sengine", this);
+            engine.put("seng", this);
             
             engine=DataMgr.loadLocalScript("/global.js", engine);
             
@@ -191,89 +197,9 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 }
             }
             
-            //Load DataExtractors
-            {
-                dataExtractorsStop();  
-            
-                HashMap<String,DataExtractorBase> dataExtractors=new HashMap();
-                this.dataExtractors=dataExtractors;
-                ScriptObject ext=eng.get("dataExtractors");   
-                logger.log(Level.INFO,"Loading Extractors");
-                Iterator<String> it=ext.keySet().iterator();
-                while(it.hasNext())
-                {
-                    String key=it.next();
-                    ScriptObject data=ext.get(key);
-                    String scriptEng=data.getString("scriptEngine");                            
-                    if(scriptEng==null || source.equals(scriptEng))
-                    {
-                        try
-                        {
-                            DataExtractorBase dext=new DataExtractorBaseImp(key,data,this);
-                            dataExtractors.put(key,dext);
-                        }catch(Exception e){e.printStackTrace();} 
-                    }                    
-                }
-            }     
-            
-            //Load DataServices
-            {
-                HashMap<String,List<SWBDataService>> dataServices=new HashMap();
-                this.dataServices=dataServices;            
-                ScriptObject dss=eng.get("dataServices");   
-                Iterator<String> it=dss.keySet().iterator();
-                while(it.hasNext())
-                {
-                    String key=it.next();
-                    ScriptObject data=dss.get(key);
-                    logger.log(Level.INFO,"Loading DataService:"+key);
-                    SWBDataService dataService=new SWBDataService(key,data);
-                    
-                    Iterator<ScriptObject> dsit=data.get("dataSources").values().iterator();
-                    while (dsit.hasNext()) 
-                    {
-                        ScriptObject dsname = dsit.next();
-                        Iterator<ScriptObject> acit=data.get("actions").values().iterator();
-                        while (acit.hasNext()) 
-                        {
-                            String action = acit.next().getValue().toString();
-                            String name=dsname.getValue().toString();
-                            
-                            if(name.equals("*"))
-                            {
-                                Iterator<String> itds=dataSources.keySet().iterator();
-                                while (itds.hasNext()) 
-                                {
-                                    name = itds.next();
-                                    String k=name+"-"+action;
-                                    List<SWBDataService> arr=dataServices.get(k);
-                                    if(arr==null)
-                                    {
-                                        arr=new ArrayList();
-                                        dataServices.put(k, arr);
-                                    }
-                                    arr.add(dataService);
-                                }
-                                
-                            }else
-                            {
-                                String k=name+"-"+action;
-                                List<SWBDataService> arr=dataServices.get(k);
-                                if(arr==null)
-                                {
-                                    arr=new ArrayList();
-                                    dataServices.put(k, arr);
-                                }
-                                arr.add(dataService);
-                            }
-                        }
-                    }
-                }
-            }
-            
             //Load DataProcessors
             {
-                HashMap<String,List<SWBDataProcessor>> dataProcessors=new HashMap();
+                HashMap<String,Set<SWBDataProcessor>> dataProcessors=new HashMap();
                 this.dataProcessors=dataProcessors;            
                 ScriptObject dss=eng.get("dataProcessors");   
                 Iterator<String> it=dss.keySet().iterator();
@@ -301,10 +227,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                                 {
                                     name = itds.next();
                                     String k=name+"-"+action;
-                                    List<SWBDataProcessor> arr=dataProcessors.get(k);
+                                    Set<SWBDataProcessor> arr=dataProcessors.get(k);
                                     if(arr==null)
                                     {
-                                        arr=new ArrayList();
+                                        arr=new TreeSet();
                                         dataProcessors.put(k, arr);
                                     }
                                     arr.add(dataProcessor);
@@ -313,10 +239,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                             }else
                             {
                                 String k=name+"-"+action;
-                                List<SWBDataProcessor> arr=dataProcessors.get(k);
+                                Set<SWBDataProcessor> arr=dataProcessors.get(k);
                                 if(arr==null)
                                 {
-                                    arr=new ArrayList();
+                                    arr=new TreeSet();
                                     dataProcessors.put(k, arr);
                                 }
                                 arr.add(dataProcessor);
@@ -327,6 +253,85 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 }
             }            
             
+            //Load DataServices
+            {
+                HashMap<String,Set<SWBDataService>> dataServices=new HashMap();
+                this.dataServices=dataServices;            
+                ScriptObject dss=eng.get("dataServices");   
+                Iterator<String> it=dss.keySet().iterator();
+                while(it.hasNext())
+                {
+                    String key=it.next();
+                    ScriptObject data=dss.get(key);
+                    logger.log(Level.INFO,"Loading DataService:"+key);
+                    SWBDataService dataService=new SWBDataService(key,data);
+                    
+                    Iterator<ScriptObject> dsit=data.get("dataSources").values().iterator();
+                    while (dsit.hasNext()) 
+                    {
+                        ScriptObject dsname = dsit.next();
+                        Iterator<ScriptObject> acit=data.get("actions").values().iterator();
+                        while (acit.hasNext()) 
+                        {
+                            String action = acit.next().getValue().toString();
+                            String name=dsname.getValue().toString();
+                            
+                            if(name.equals("*"))
+                            {
+                                Iterator<String> itds=dataSources.keySet().iterator();
+                                while (itds.hasNext()) 
+                                {
+                                    name = itds.next();
+                                    String k=name+"-"+action;
+                                    Set<SWBDataService> arr=dataServices.get(k);
+                                    if(arr==null)
+                                    {
+                                        arr=new TreeSet();
+                                        dataServices.put(k, arr);
+                                    }
+                                    arr.add(dataService);
+                                }
+                                
+                            }else
+                            {
+                                String k=name+"-"+action;
+                                Set<SWBDataService> arr=dataServices.get(k);
+                                if(arr==null)
+                                {
+                                    arr=new TreeSet();
+                                    dataServices.put(k, arr);
+                                }
+                                arr.add(dataService);
+                            }
+                        }
+                    }
+                }
+            }            
+            
+            //Load DataExtractors
+            {
+                dataExtractorsStop();  
+            
+                HashMap<String,DataExtractorBase> dataExtractors=new HashMap();
+                this.dataExtractors=dataExtractors;
+                ScriptObject ext=eng.get("dataExtractors");   
+                logger.log(Level.INFO,"Loading Extractors");
+                Iterator<String> it=ext.keySet().iterator();
+                while(it.hasNext())
+                {
+                    String key=it.next();
+                    ScriptObject data=ext.get(key);
+                    String scriptEng=data.getString("scriptEngine");                            
+                    if(scriptEng==null || source.equals(scriptEng))
+                    {
+                        try
+                        {
+                            DataExtractorBase dext=new DataExtractorBaseImp(key,data,this);
+                            dataExtractors.put(key,dext);
+                        }catch(Exception e){e.printStackTrace();} 
+                    }                    
+                }
+            }                            
             
 //            //Load UserRepository
 //            {
@@ -470,7 +475,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @return Lista de SWBDataService o null si no hay SWBDataService relacionados
      */
     @Override
-    public List<SWBDataService> findDataServices(String dataSource, String action)
+    public Set<SWBDataService> findDataServices(String dataSource, String action)
     {
         return dataServices.get(dataSource+"-"+action);
     }
@@ -483,9 +488,9 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @param response
      */
     @Override
-    public void invokeDataServices(String dataSource, String action, DataObject request, DataObject response)
+    public void invokeDataServices(String dataSource, String action, DataObject request, DataObject response, DataObject trxParams)
     {
-        invokeDataServices(this, dataSource, action, request, response);
+        invokeDataServices(this, dataSource, action, request, response, trxParams);
     }
        
     /**
@@ -496,16 +501,16 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @param request
      * @param response
      */
-    protected void invokeDataServices(SWBScriptEngine userengine, String dataSource, String action, DataObject request, DataObject response)
+    protected void invokeDataServices(SWBScriptEngine userengine, String dataSource, String action, DataObject request, DataObject response, DataObject trxParams)
     {
         SWBMonitorMgr.startMonitor("/dv/"+dataSource+"/"+action);
         long time=System.currentTimeMillis();
         if(disabledDataTransforms)return;
         
-        List<SWBDataService> list=findDataServices(dataSource, action);
-        if(list!=null)
+        Set<SWBDataService> set=findDataServices(dataSource, action);
+        if(set!=null)
         {
-            Iterator<SWBDataService> dsit=list.iterator();
+            Iterator<SWBDataService> dsit=set.iterator();
             while(dsit.hasNext())
             {
                 SWBDataService dsrv=dsit.next();
@@ -514,7 +519,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 {
                     try
                     {
-                        func.invoke(userengine,request,response.get("response"),dataSource,action);
+                        func.invoke(userengine,request,response.get("response"),dataSource,action,trxParams);
                     }catch(Throwable e)
                     {
                         e.printStackTrace();
@@ -542,7 +547,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      */
     
     @Override
-    public List<SWBDataProcessor> findDataProcessors(String dataSource, String action)
+    public Set<SWBDataProcessor> findDataProcessors(String dataSource, String action)
     {
         return dataProcessors.get(dataSource+"-"+action);
     }   
@@ -556,9 +561,9 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @return
      */
     @Override
-    public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj)
+    public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams)
     {
-        return invokeDataProcessors(this, dataSource, action, method, obj);
+        return invokeDataProcessors(this, dataSource, action, method, obj, trxParams);
     }
     
     /**
@@ -570,15 +575,15 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      * @param obj
      * @return
      */
-    protected DataObject invokeDataProcessors(SWBScriptEngine userengine, String dataSource, String action, String method, DataObject obj)
+    protected DataObject invokeDataProcessors(SWBScriptEngine userengine, String dataSource, String action, String method, DataObject obj, DataObject trxParams)
     {
-        SWBMonitorMgr.startMonitor("/dp/"+dataSource+"/"+action+"/"+method);
         if(disabledDataTransforms)return obj;
+        SWBMonitorMgr.startMonitor("/dp/"+dataSource+"/"+action+"/"+method);
         
-        List<SWBDataProcessor> list=findDataProcessors(dataSource, action);
-        if(list!=null)
+        Set<SWBDataProcessor> set=findDataProcessors(dataSource, action);
+        if(set!=null)
         {
-            Iterator<SWBDataProcessor> dsit=list.iterator();
+            Iterator<SWBDataProcessor> dsit=set.iterator();
             while(dsit.hasNext())
             {
                 SWBDataProcessor dsrv=dsit.next();
@@ -588,13 +593,14 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                 {
                     try
                     {
-                        ScriptObject r=func.invoke(userengine,obj,dataSource,action);
+                        ScriptObject r=func.invoke(userengine,obj,dataSource,action,trxParams);
                         if(r!=null && r.getValue() instanceof DataObject)
                         {
                             obj=(DataObject)r.getValue();
                         }
                     }catch(jdk.nashorn.internal.runtime.ECMAException ecma)
                     {
+                        SWBMonitorMgr.cancelMonitor();
                         throw ecma;
                     }catch(Throwable e)
                     {
@@ -1063,6 +1069,39 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
         ScriptObject config = this.getScriptObject().get("config");        
         return config.toDataObject();
     }
+
+    @Override
+    public String compile(String code) {
+        if(code!=null)
+        {
+            try {
+                ((Compilable)sengine).compile(code);
+            } catch (ScriptException ex) {
+                return ex.getLocalizedMessage();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ProcessMgr getProcessMgr() {
+        if(processMgr==null)
+        {
+            synchronized(this)
+            {
+                if(processMgr==null)
+                {
+                    processMgr=ProcessMgr.createInstance(this);
+                }
+            }
+        }
+        return processMgr;
+    }
+
+    @Override
+    public String getContextPath() {
+        return DataMgr.getContextPath();
+    }
     
     /**
      *
@@ -1102,6 +1141,15 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
             return false;
         }        
                 
+    }
+
+    @Override
+    public DataObject getData() {
+        return data;
+    }
+
+    public String getSource() {
+        return source;
     }
     
 }

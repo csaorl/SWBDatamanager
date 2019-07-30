@@ -12,6 +12,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.util.JSON;
 import java.io.IOException;
 import java.util.Iterator;
@@ -61,19 +62,25 @@ public class DataStoreMongo implements SWBDataStore
             {
                 if(mongoClient==null)
                 {
-                    //System.out.println("New DataStoreMongo...");
-                    //TODO:configurar direccion de servidor
-                    if ((null!=this.dataStore.getString("envhost") && null!=this.dataStore.getString("envport")))
+                    String clientURI=dataStore.getString("clientURI");
+                    String envClientURI=dataStore.getString("envClientURI");
+                    if(envClientURI!=null)clientURI=System.getenv(envClientURI);
+                    
+                    if(clientURI!=null)
                     {
-                        String host = System.getenv(dataStore.getString("envhost"));
-                        //log.info("Host:"+host);
-                        int port = Integer.parseInt(System.getenv(dataStore.getString("envport")));
-                        //log.info("Port:"+port);
+                        mongoClient = new MongoClient(new MongoClientURI(dataStore.getString("clientURI")));
+                        log.fine("Connecting to: clientURI -> "+clientURI);
+                    }else
+                    {
+                        String host=dataStore.getString("host");
+                        int port=dataStore.getInt("port");
+                        String envHost=dataStore.getString("envHost");
+                        String envPort=dataStore.getString("envPort");
+                        if(envHost!=null)host=System.getenv(envHost);
+                        if(envPort!=null)port=Integer.parseInt(System.getenv(envPort));
+                        
                         log.fine("Connecting to: host:port -> "+host+":"+port);
                         mongoClient = new MongoClient(host, port);
-                    } else
-                    {
-                        mongoClient = new MongoClient(dataStore.getString("host"), (Integer) dataStore.get("port").getValue());
                     }
                 }                
             }
@@ -466,18 +473,30 @@ public class DataStoreMongo implements SWBDataStore
 
             BasicDBObject data = (BasicDBObject)json.get("data");
             BasicDBObject oldValues = (BasicDBObject)json.get("oldValues");
+            BasicDBObject update = (BasicDBObject)json.get("update");
 
-            String id=data.getString("_id");
+            Object id=data.remove("_id");
             BasicDBObject search=new BasicDBObject().append("_id", id);
 
-            DBObject base=coll.findOne(search);
-            //System.out.println("base"+base);
-
-            data.remove("_id");
-            DBObject obj=copyDBObjectOldValues(base,data,oldValues);
-            //data.markAsPartialObject();
-            //DBObject obj=coll.findAndModify(search, data);
-            coll.save(obj);
+            //DBObject base=coll.findOne(search);
+            //DBObject obj=copyDBObjectOldValues(base,data,oldValues);
+            //coll.save(obj);
+            
+            filterOldValues(data,oldValues);
+            DBObject upd=new BasicDBObject().append("$set", data);
+            if(update!=null)
+            {
+                upd=update;
+            }
+            DBObject obj=null;
+            if(update==null && data.isEmpty())
+            {
+                obj=coll.findOne(search);                         
+            }
+            else
+            {
+                obj=coll.findAndModify(search,null,null,false,upd,true,false);
+            }
 
             BasicDBObject ret=new BasicDBObject();
             BasicDBObject resp=new BasicDBObject();
@@ -518,6 +537,21 @@ public class DataStoreMongo implements SWBDataStore
         }
         return base;
     }    
+    
+    private void filterOldValues(DBObject jobj, DBObject oobj)
+    {
+        if(oobj==null)return;
+        Iterator<String> it = jobj.keySet().iterator();
+        while (it.hasNext())
+        {
+            String key = it.next();
+            Object val=jobj.get(key);
+            //System.out.println("key:"+key);
+            //System.out.println("val:"+val);
+            //System.out.println("oobj:"+oobj);
+            if((val!=null && val.equals(oobj.get(key))) || (val==null && oobj.get(key)==null))it.remove();
+        }
+    }       
     
     /**
      *

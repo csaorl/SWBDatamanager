@@ -43,7 +43,7 @@ public class DataExtractorBaseImp implements DataExtractorBase
         this.scriptObject=script;        
         String dataSourceName=this.scriptObject.getString("dataSource");
         this.dataSource=engine.getDataSource(dataSourceName);        
-        if(this.dataSource==null)throw new NoSuchFieldError("DataSource not found:"+dataSourceName);
+        //if(this.dataSource==null)throw new NoSuchFieldError("DataSource not found:"+dataSourceName);
         
         logger.log(Level.INFO,"Loading DataExtractor:"+name);
         String dataClass=script.getString("class");
@@ -68,7 +68,7 @@ public class DataExtractorBaseImp implements DataExtractorBase
      */
     public void store(DataObject data) throws IOException
     {
-        dataSource.add(data);
+        if(dataSource!=null)dataSource.add(data);
     }
 
     /**
@@ -151,6 +151,8 @@ public class DataExtractorBaseImp implements DataExtractorBase
      */
     public void start()
     {
+        final DataExtractorBase base=this;
+        
         ScriptObject t=getScriptObject().get("timer");
         if(t!=null)
         {
@@ -158,33 +160,39 @@ public class DataExtractorBaseImp implements DataExtractorBase
             String unit=t.getString("unit");
             if(unit!=null)
             {
+                if(unit.equals("ms"))time=time;
                 if(unit.equals("s"))time=time*1000;
                 if(unit.equals("m"))time=time*1000*60;
                 if(unit.equals("h"))time=time*1000*60*60;
                 if(unit.equals("d"))time=time*1000*60*60*24;
             }
             
-            final DataExtractorBase base=this;
             
-            timer=new Timer();
-            timer.schedule(new TimerTask()
+            final Timer ttimer=new Timer();
+            ttimer.schedule(new TimerTask()
             {
                 @Override
                 public void run() {
                     try
                     {
-                        if(!scriptEngine.isDisabledDataTransforms())
+                        if(timer==null)
                         {
-                            extractor.extract(base);
+                            timer=ttimer;
+                            extractor.start(base);
+                        }else
+                        {                        
+                            if(!scriptEngine.isDisabledDataTransforms())
+                            {
+                                extractor.extract(base);
+                            }
                         }
                     }catch(Exception e)
                     {
                         e.printStackTrace();
                     }
                 }   
-            },time,time);
-        }
-        extractor.start(this);
+            },0,time);
+        }        
     }
     
     /**

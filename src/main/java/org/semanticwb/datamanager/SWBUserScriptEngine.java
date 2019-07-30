@@ -84,12 +84,12 @@ public class SWBUserScriptEngine implements SWBScriptEngine
     }
 
     @Override
-    public List<SWBDataProcessor> findDataProcessors(String dataSource, String action) {
+    public Set<SWBDataProcessor> findDataProcessors(String dataSource, String action) {
         return engine.findDataProcessors(dataSource, action);
     }
 
     @Override
-    public List<SWBDataService> findDataServices(String dataSource, String action) {
+    public Set<SWBDataService> findDataServices(String dataSource, String action) {
         return engine.findDataServices(dataSource, action);
     }
 
@@ -159,8 +159,8 @@ public class SWBUserScriptEngine implements SWBScriptEngine
      */
 
     @Override
-    public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj) {
-        return engine.invokeDataProcessors(this,dataSource, action, method, obj);
+    public DataObject invokeDataProcessors(String dataSource, String action, String method, DataObject obj, DataObject trxParams) {
+        return engine.invokeDataProcessors(this,dataSource, action, method, obj,trxParams);
     }
 
     /**
@@ -171,8 +171,8 @@ public class SWBUserScriptEngine implements SWBScriptEngine
      * @param response
      */
     @Override
-    public void invokeDataServices(String dataSource, String action, DataObject request, DataObject response) {
-        engine.invokeDataServices(this, dataSource, action, request, response);
+    public void invokeDataServices(String dataSource, String action, DataObject request, DataObject response, DataObject trxParams) {
+        engine.invokeDataServices(this, dataSource, action, request, response, trxParams);
     }
 
     /**
@@ -517,6 +517,31 @@ public class SWBUserScriptEngine implements SWBScriptEngine
     @Override
     public DataObject getConfigData() {
         return engine.getConfigData();
+    }
+
+    @Override
+    public DataObject getData() {
+        return engine.getData();
+    }
+
+    @Override
+    public String getSource() {
+        return engine.getSource();
+    }
+
+    @Override
+    public String compile(String code) {
+        return engine.compile(code);
+    }
+
+    @Override
+    public ProcessMgr getProcessMgr() {
+        return engine.getProcessMgr();
+    }
+
+    @Override
+    public String getContextPath() {
+        return engine.getContextPath();
     }
     
 }

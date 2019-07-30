@@ -303,7 +303,7 @@ public class QueryManager {
         def.addQueryObject("Facturas", "?Facturas1").addQueryProperty("numero", "?numero1", "?");
         
         QueryManager mgr=new QueryManager("/test/datasources.js",null,def);  
-        //DataObject ret=mgr.execute();
-        //System.out.println("ret:"+ret);
+        DataObject ret=mgr.execute();
+        System.out.println("ret:"+ret);
     }
 }
