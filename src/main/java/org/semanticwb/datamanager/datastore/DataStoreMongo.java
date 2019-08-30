@@ -682,4 +682,9 @@ public class DataStoreMongo implements SWBDataStore
     public MongoClient getMongoClient() {
         return mongoClient;
     }        
+
+    @Override
+    public boolean existModel(String modelid) {
+        return mongoClient.getDatabaseNames().contains(modelid);
+    }
 }

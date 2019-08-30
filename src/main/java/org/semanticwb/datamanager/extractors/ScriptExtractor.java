@@ -31,13 +31,7 @@ public class ScriptExtractor implements DataExtractor
         //System.out.println("func:"+func);
         if(func!=null && func.isFunction())
         {
-            try
-            {
-                ScriptObject r=func.invoke(base.getScriptEngine(),base);
-            }catch(Throwable e)
-            {
-                e.printStackTrace();
-            }
+            ScriptObject r=func.invoke(base.getScriptEngine(),base);
         }        
     }
 

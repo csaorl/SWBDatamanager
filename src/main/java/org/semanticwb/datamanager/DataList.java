@@ -184,6 +184,31 @@ public class DataList<E> extends ArrayList<E>
         }
         sb.append("]");
         return sb.toString();
-    }     
+    }   
+    
+    /**
+     * Clone recursively the DataList with its childs
+     * @return 
+     */
+    public DataList cloneDataList()
+    {
+        DataList ret=new DataList();
+        
+        Iterator it=iterator();
+        while (it.hasNext()) {
+            Object obj = it.next();
+            if(obj instanceof DataObject)
+            {
+                ret.add(((DataObject)obj).cloneDataObject());
+            }else if(obj instanceof DataList)
+            {
+                ret.add(((DataList)obj).cloneDataList());
+            }else
+            {
+                ret.add(obj);
+            }
+        }        
+        return ret;
+    }    
     
 }

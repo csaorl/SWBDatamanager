@@ -156,11 +156,22 @@ public class DataExtractorBaseImp implements DataExtractorBase
         ScriptObject t=getScriptObject().get("timer");
         if(t!=null)
         {
+            long first_time=t.getInt("first_time");
+            String first_unit=t.getString("first_unit");
+            if(first_unit!=null)
+            {
+                //if(first_unit.equals("ms"))first_time=first_time;
+                if(first_unit.equals("s"))first_time=first_time*1000;
+                if(first_unit.equals("m"))first_time=first_time*1000*60;
+                if(first_unit.equals("h"))first_time=first_time*1000*60*60;
+                if(first_unit.equals("d"))first_time=first_time*1000*60*60*24;
+            }                                    
+            
             long time=t.getInt("time");
             String unit=t.getString("unit");
             if(unit!=null)
             {
-                if(unit.equals("ms"))time=time;
+                //if(unit.equals("ms"))time=time;
                 if(unit.equals("s"))time=time*1000;
                 if(unit.equals("m"))time=time*1000*60;
                 if(unit.equals("h"))time=time*1000*60*60;
@@ -178,20 +189,21 @@ public class DataExtractorBaseImp implements DataExtractorBase
                         if(timer==null)
                         {
                             timer=ttimer;
+                            logger.log(Level.INFO,"Start Extractor:"+getName());
                             extractor.start(base);
-                        }else
-                        {                        
-                            if(!scriptEngine.isDisabledDataTransforms())
-                            {
-                                extractor.extract(base);
-                            }
-                        }
+                        }       
+                        
+                        if(!scriptEngine.isDisabledDataTransforms())
+                        {
+                            extractor.extract(base);
+                        }                        
                     }catch(Exception e)
                     {
+                        logger.log(Level.SEVERE,"Error process extractor: "+getName(),e);
                         e.printStackTrace();
                     }
                 }   
-            },0,time);
+            },first_time,time);
         }        
     }
     
@@ -203,7 +215,9 @@ public class DataExtractorBaseImp implements DataExtractorBase
         if(timer!=null)
         {
             timer.cancel();
+            timer=null;
         }
+        logger.log(Level.INFO,"Stop Extractor:"+getName());
         extractor.stop(this);
     }    
 

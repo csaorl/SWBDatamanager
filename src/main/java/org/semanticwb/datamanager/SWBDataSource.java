@@ -159,18 +159,18 @@ public class SWBDataSource
      */
     public DataObjectIterator find(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
         long time=System.currentTimeMillis();
         if(canDoAction(ACTION_FETCH))
         {
             DataObject trxParams=new DataObject();
             DataObject req=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_REQUEST, json, trxParams);
             DataObjectIterator res=db.find(req,this);
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
             return new DataObjectIterator();
         }
     }  
@@ -305,7 +305,7 @@ public class SWBDataSource
      */
     public DataObject fetch(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_FETCH);
         if(canDoAction(ACTION_FETCH))
         {
             DataObject trxParams=new DataObject();
@@ -314,11 +314,11 @@ public class SWBDataSource
             DataObject res=db.fetch(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_FETCH, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
             engine.invokeDataServices(name, SWBDataSource.ACTION_FETCH, req, res, trxParams);
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }
     }
@@ -342,7 +342,7 @@ public class SWBDataSource
      */
     public DataObject aggregate(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_AGGREGATE);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_AGGREGATE);
         if(canDoAction(ACTION_AGGREGATE))
         {        
             DataObject trxParams=new DataObject();
@@ -350,11 +350,11 @@ public class SWBDataSource
             DataObject res=db.aggregate(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_AGGREGATE, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
             engine.invokeDataServices(name, SWBDataSource.ACTION_AGGREGATE, req, res, trxParams);
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }            
     }
@@ -630,7 +630,7 @@ public class SWBDataSource
     
     public DataObject update(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_UPDATE);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_UPDATE);
         if(canDoAction(ACTION_UPDATE))
         {         
             DataObject trxParams=new DataObject();
@@ -648,11 +648,11 @@ public class SWBDataSource
                     cache.remove(id);
                 }
             }            
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         } 
     }   
@@ -682,7 +682,7 @@ public class SWBDataSource
     
     public DataObject add(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_ADD);        
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_ADD);        
         if(canDoAction(ACTION_ADD))
         {                  
             DataObject trxParams=new DataObject();
@@ -690,11 +690,11 @@ public class SWBDataSource
             DataObject res=db.add(req,this);
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_ADD, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
             engine.invokeDataServices(name, SWBDataSource.ACTION_ADD, req, res, trxParams);
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }             
     }  
@@ -839,7 +839,7 @@ public class SWBDataSource
      */
     public DataObject remove(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_REMOVE);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_REMOVE);
         long time=System.currentTimeMillis();
         if(canDoAction(ACTION_REMOVE))
         {          
@@ -850,11 +850,11 @@ public class SWBDataSource
             res=engine.invokeDataProcessors(name, SWBDataSource.ACTION_REMOVE, SWBDataProcessor.METHOD_RESPONSE, res, trxParams);
             engine.invokeDataServices(name, SWBDataSource.ACTION_REMOVE, req, res, trxParams);
             cache.clear();    
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
             return res;
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
             return getError(-5, "Forbidden Action");
         }         
     }   
@@ -884,7 +884,7 @@ public class SWBDataSource
     
     public DataObject validate(DataObject json) throws IOException
     {
-        SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_VALIDATE);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/ds/"+name+"/"+SWBDataSource.ACTION_VALIDATE);
 //        String modelid=dataSource.getModelId();
 //        String scls=dataSource.getClassName();
         DataObject ret=new DataObject();
@@ -969,7 +969,7 @@ public class SWBDataSource
         {
             resp.put("status", 0);
         }
-        SWBMonitorMgr.endMonitor();
+        if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
         return ret;                
     } 
     
@@ -1232,5 +1232,13 @@ public class SWBDataSource
     {
         return getDataSourceScript().getString("displayField");
     }
+
+    public SWBDataStore getDataStore() {
+        return db;
+    }        
+
+    public String getDataStoreName() {
+        return dataStoreName;
+    }        
     
 }

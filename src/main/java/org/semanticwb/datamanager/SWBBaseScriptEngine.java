@@ -323,6 +323,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                     ScriptObject data=ext.get(key);
                     String scriptEng=data.getString("scriptEngine");                            
                     if(scriptEng==null || source.equals(scriptEng))
+                    //if(source.equals("/admin/ds/admin.js"))
                     {
                         try
                         {
@@ -362,6 +363,12 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                         fileSources.put(dsname,(SWBFileSource)c.newInstance(fileSource, ds));
                     }catch(Exception e){e.printStackTrace();}        
                 }
+            }
+            
+            //loadProcesses
+            if(source.equals("/admin/ds/admin.js"))
+            {
+                processMgr=ProcessMgr.createInstance(this);
             }
             
             dataExtractorsStart();         
@@ -503,7 +510,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
      */
     protected void invokeDataServices(SWBScriptEngine userengine, String dataSource, String action, DataObject request, DataObject response, DataObject trxParams)
     {
-        SWBMonitorMgr.startMonitor("/dv/"+dataSource+"/"+action);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/dv/"+dataSource+"/"+action);
         long time=System.currentTimeMillis();
         if(disabledDataTransforms)return;
         
@@ -526,10 +533,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                     }
                 }
             }            
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
         }
     }
     
@@ -578,7 +585,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
     protected DataObject invokeDataProcessors(SWBScriptEngine userengine, String dataSource, String action, String method, DataObject obj, DataObject trxParams)
     {
         if(disabledDataTransforms)return obj;
-        SWBMonitorMgr.startMonitor("/dp/"+dataSource+"/"+action+"/"+method);
+        if(SWBMonitorMgr.active)SWBMonitorMgr.startMonitor("/dp/"+dataSource+"/"+action+"/"+method);
         
         Set<SWBDataProcessor> set=findDataProcessors(dataSource, action);
         if(set!=null)
@@ -600,7 +607,7 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                         }
                     }catch(jdk.nashorn.internal.runtime.ECMAException ecma)
                     {
-                        SWBMonitorMgr.cancelMonitor();
+                        if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
                         throw ecma;
                     }catch(Throwable e)
                     {
@@ -608,10 +615,10 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
                     }
                 }
             }            
-            SWBMonitorMgr.endMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.endMonitor();
         }else
         {
-            SWBMonitorMgr.cancelMonitor();
+            if(SWBMonitorMgr.active)SWBMonitorMgr.cancelMonitor();
         }
         return obj;
     }
@@ -1085,16 +1092,6 @@ public class SWBBaseScriptEngine implements SWBScriptEngine
 
     @Override
     public ProcessMgr getProcessMgr() {
-        if(processMgr==null)
-        {
-            synchronized(this)
-            {
-                if(processMgr==null)
-                {
-                    processMgr=ProcessMgr.createInstance(this);
-                }
-            }
-        }
         return processMgr;
     }
 

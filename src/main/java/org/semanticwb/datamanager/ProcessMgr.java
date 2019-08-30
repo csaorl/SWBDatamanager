@@ -19,15 +19,18 @@ public class ProcessMgr {
     private static final Logger logger = Logger.getLogger(ProcessMgr.class.getName());    
     private SWBScriptEngine eng;
     private HashMap<String,SWBProcess> processes=new HashMap();
+    
+    private HashMap<String,DataObject> transitionsTimers=new HashMap();             //key = transition_numid - res_numid
 
     private ProcessMgr(SWBScriptEngine eng) {
         logger.log(Level.INFO,"Initializing ProcessMgr");                
         this.eng=eng;
+        loadTimers();
     }
     
     /**
      * Create an instance of ProcessMgr
-     * @param applicationPath
+     * @param eng SWBScriptEngine
      * @return
      */
     protected static ProcessMgr createInstance(SWBScriptEngine eng)
@@ -43,11 +46,7 @@ public class ProcessMgr {
      */
     public SWBProcess getProcess(String id) throws IOException
     {
-        DataObject proc=eng.getDataSource("SWBF_Process").getObjectById(id);
-        if(proc==null)return null;
-        
         SWBProcess ret=processes.get(id);
-        if(ret!=null && ret.getDataObject()!=proc)ret=null;        //Compara si cambio el objeto process de cache, lo recarga
         if(ret==null)
         {
             synchronized(this)
@@ -55,8 +54,12 @@ public class ProcessMgr {
                 ret=processes.get(id);
                 if(ret==null)
                 {
-                    ret=new SWBProcess(eng, proc);
-                    processes.put(id, ret);
+                    DataObject proc=eng.getDataSource("SWBF_Process").fetchObjById(id);
+                    if(proc!=null)
+                    {
+                        ret=new SWBProcess(eng, proc);
+                        processes.put(id, ret);
+                    }
                 }
             }
         }
@@ -179,6 +182,62 @@ public class ProcessMgr {
             //System.out.println("user:"+user);
         }
         return errorMsg;
-    }    
+    }   
+    
+    /**
+     * Load transitions for check timers
+     */
+    public void loadTimers()
+    {
+        try
+        {
+            DataObject states=eng.getDataSource("SWBF_State").mapById();
+            DataObject query=new DataObject();
+            query.addSubObject("data").addParam("type", "timer");                        
+            DataObjectIterator it=eng.getDataSource("SWBF_Transition").find(query);            
+            while (it.hasNext()) {
+                DataObject trans = it.next();
+                DataList<String> sourceStates=trans.getDataList("sourceStates");       
+                DataList<String> resources=null;
+                for(String stateid:sourceStates)
+                {
+                    DataObject state=states.getDataObject(stateid);
+                    query=new DataObject();
+                    query.addSubObject("data").addParam(state.getString("prop").substring(state.getString("ds").length()+1), state.getString("value"));       
+                    SWBDataSource ds=eng.getDataSource(state.getString("ds"));
+                    if(ds!=null)
+                    {
+                        DataObject map=ds.mapByNumId(query);
+                        if(resources==null)
+                        {
+                            resources=new DataList();
+                            resources.addAll(map.keySet());
+                        }else
+                        {
+                            resources.retainAll(map.keySet());
+                        }
+                    }
+                }
+                if(resources!=null)
+                {
+                    for(String numid:resources)
+                    {
+                        transitionsTimers.put(trans.getNumId()+"-"+numid, trans);
+                        System.out.println("transitionsTimers:"+trans.getNumId()+"-"+numid);
+                    }                
+                }
+            }                        
+        }catch(Exception e)
+        {
+            logger.log(Level.SEVERE,"Error loading process timers...",e);
+        }
+    }
+    
+    public void clearCache()
+    {
+        processes.clear();
+        transitionsTimers.clear();
+        loadTimers();
+    }
     
 }

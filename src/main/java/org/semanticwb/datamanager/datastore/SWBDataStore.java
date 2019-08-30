@@ -72,7 +72,12 @@ public interface SWBDataStore
     public DataObject update(DataObject json, SWBDataSource dataSource) throws IOException;
 
     /**
-     *
+     * Close the DataStore
      */
     public void close();
+    
+    /**
+     * returns true if the datastore is created and persist in the database
+     */
+    public boolean existModel(String modelid);
 }

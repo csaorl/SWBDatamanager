@@ -6,6 +6,7 @@
 package org.semanticwb.datamanager;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -25,6 +26,7 @@ public class DataObject extends LinkedHashMap<String, Object>
 {
     private static SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
     private static SimpleDateFormat iso_base = new SimpleDateFormat("yyyy-MM-dd");
+    private static DecimalFormat decimal_format = new DecimalFormat( "#,##0.00;(#,##0.00)" );    
     public static final DataObject EMPTY=new DataObject();
 
     @Override
@@ -99,6 +101,35 @@ public class DataObject extends LinkedHashMap<String, Object>
         }
         return def;
     }
+    
+    /**
+     * Return String fomated uning String.format method
+     * @param key
+     * @param format
+     * @return 
+     */
+    public String getStringFormated(String key, String format)
+    {
+        return getStringFormated(key, null, format);
+    }
+    
+    /**
+     * 
+     * @param key
+     * @param def
+     * @param format
+     * @return 
+     */
+    public String getStringFormated(String key, Object def, String format)
+    {
+        Object obj = get(key);
+        if (obj == null) {
+            obj=def;
+        }
+        if(obj==null)return null;
+        return String.format(format, obj);     
+    }
+    
 
     /**
      *
@@ -124,7 +155,7 @@ public class DataObject extends LinkedHashMap<String, Object>
             return def;
         }
         return getInt(key);
-    }
+    }    
 
     /**
      *
@@ -149,6 +180,23 @@ public class DataObject extends LinkedHashMap<String, Object>
             e.printStackTrace();
         }
         return 0;
+    }
+    
+    /**
+     * Increment the value by inc
+     * @param key
+     * @param inc
+     * @return 
+     */
+    public int incInt(String key, int inc)
+    {
+        int r=inc;
+        synchronized(this)
+        {
+            r=getInt(key)+inc;
+            addParam(key, r);
+        }
+        return r;
     }
 
     /**
@@ -188,6 +236,23 @@ public class DataObject extends LinkedHashMap<String, Object>
         }
         return 0;
     }
+    
+    /**
+     * Increment the value by inc
+     * @param key
+     * @param inc
+     * @return 
+     */
+    public long incLong(String key, long inc)
+    {
+        long r=inc;
+        synchronized(this)
+        {
+            r=getLong(key)+inc;
+            addParam(key, r);
+        }
+        return r;
+    }    
 
     /**
      *
@@ -251,6 +316,29 @@ public class DataObject extends LinkedHashMap<String, Object>
             e.printStackTrace();
         }
         return 0.0;
+    }
+    
+    public String getNumberFormated(String key)
+    {
+        return getNumberFormated(key, null);
+    }
+    
+    public String getNumberFormated(String key, Object def)
+    {
+        return getNumberFormated(key, def, null);
+    }    
+    
+    public String getNumberFormated(String key, Object def, String format)
+    {
+        Object obj = get(key);
+        if (obj == null)obj=def;
+        if(obj==null)return null;
+        if(obj instanceof String)obj=Double.parseDouble((String)obj);
+        if(format==null)        
+            return decimal_format.format(obj);
+        else{
+            return new DecimalFormat(format).format(obj);
+        }
     }
     
     /**
@@ -538,6 +626,15 @@ public class DataObject extends LinkedHashMap<String, Object>
         });
     }
     
+    public void orderBy(String keys[])
+    {        
+        for(String key:keys)
+        {
+            Object obj=remove(key);
+            if(obj!=null)put(key, obj);
+        }
+    }
+    
     /**
      *
      * @param value
@@ -614,5 +711,31 @@ public class DataObject extends LinkedHashMap<String, Object>
 
         return sb.toString();
     }    
+    
+    /**
+     * Clone recursively the dataObject with its childs
+     * @return 
+     */
+    public DataObject cloneDataObject()
+    {
+        DataObject ret=new DataObject();
+        
+        for(Entry<String,Object> entry: entrySet())
+        {
+            String key=entry.getKey();
+            Object obj=entry.getValue();
+            if(obj instanceof DataObject)
+            {
+                ret.addParam(key, ((DataObject)obj).cloneDataObject());
+            }else if(obj instanceof DataList)
+            {
+                ret.addParam(key, ((DataList)obj).cloneDataList());
+            }else
+            {
+                ret.addParam(key, obj);
+            }
+        }        
+        return ret;
+    }
 
 }

@@ -15,8 +15,10 @@ import org.semanticwb.datamanager.DataObject;
  */
 public class SWBMonitorMgr {
     
+    public static boolean active=false;
     private static HashMap<String,SWBMonitorRecord> stats=new HashMap();    
-    private static HashMap<Long,LinkedList> threads=new HashMap();
+    private static HashMap<Long,LinkedList> threads=new HashMap();    
+    
     
     private SWBMonitorMgr()
     {
