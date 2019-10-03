@@ -14,6 +14,8 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.util.JSON;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.logging.Logger;
 
 import org.bson.types.ObjectId;
 import org.semanticwb.datamanager.DataList;
+import org.semanticwb.datamanager.DataMgr;
 import org.semanticwb.datamanager.DataObject;
 import org.semanticwb.datamanager.DataObjectIterator;
 import org.semanticwb.datamanager.SWBDataSource;
@@ -416,6 +419,8 @@ public class DataStoreMongo implements SWBDataStore
     {
         BasicDBObject json=toBasicDBObject(dson);
 //        MongoClient mongoClient = new MongoClient("localhost");
+        DataObject dsn = dson;
+    	SWBDataSource dts = dataSource;
         try
         {
             initDB();
@@ -432,12 +437,14 @@ public class DataStoreMongo implements SWBDataStore
             //ObjectId id=getObjectId(data);
             if(removeByID)
             {
-                String id=data.getString("_id");
+            	removeFile(dsn, dts);
+            	String id=data.getString("_id");
                 BasicDBObject search=new BasicDBObject().append("_id", id);
                 base=coll.findAndRemove(search);
             }else
             {
-                coll.remove(data);                
+            	removeFile(dsn, dts);
+            	coll.remove(data);                
             }
 
             BasicDBObject ret=new BasicDBObject();
@@ -461,8 +468,11 @@ public class DataStoreMongo implements SWBDataStore
      */
     public DataObject update(DataObject dson, SWBDataSource dataSource) throws IOException
     {
+    	System.out.println("UPDATE ....................");
         BasicDBObject json=toBasicDBObject(dson);
 //        MongoClient mongoClient = new MongoClient("localhost");
+        DataObject dsn = dson;
+    	SWBDataSource dts = dataSource;
         try
         {        
             initDB();
@@ -495,7 +505,8 @@ public class DataStoreMongo implements SWBDataStore
             }
             else
             {
-                obj=coll.findAndModify(search,null,null,false,upd,true,false);
+            	removeFile(dsn, dts);
+            	obj=coll.findAndModify(search,null,null,false,upd,true,false);
             }
 
             BasicDBObject ret=new BasicDBObject();
@@ -509,7 +520,51 @@ public class DataStoreMongo implements SWBDataStore
         {
 //            mongoClient.close();
         }
-    }            
+    }      
+    
+    /**
+	 *
+	 * @param dson
+	 * @param dataSource
+	 * @return
+	 * @throws IOException
+	 */
+
+	public DataObject removeFile(DataObject dson, SWBDataSource dataSource) throws IOException {
+           System.out.println("removeFile.....................");
+		try {
+			DataObject dob = dson.getDataObject("data");
+
+			String _id = dob.getString("_id");
+			DataObject query = new DataObject();
+			query.addSubObject("data").addParam("_id", _id);
+			DataList dl = this.fetch(query, dataSource).getDataObject("response").getDataList("data");
+			DataObject dob2 = new DataObject();
+			for (Object i : dl) {
+				dob2 = (DataObject) i;
+			}
+			DataObject dob3 = new DataObject();
+			DataList dl2 = dob2.getDataList("archivo");
+
+			dob3 = (DataObject) dl2.get(0);
+			String id = dob3.getString("id");
+			System.out.println("Id archivo : " + dob3.getString("id"));
+
+			String path=DataMgr.getApplicationPath()+"/uploadfile/";
+			System.out.println("path: " +path);
+						
+			File file = new File(path.concat(id));
+			file.delete();
+						
+		} catch (Exception ex) {
+
+		} finally {
+
+		}
+
+		return null;
+
+	}
     
     private DBObject copyDBObject(DBObject base, DBObject jobj)
     {
